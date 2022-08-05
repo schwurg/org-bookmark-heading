@@ -76,13 +76,29 @@
   :link '(url-link "http://github.com/alphapapa/org-bookmark-heading"))
 
 (defcustom org-bookmark-jump-indirect nil
-  "Jump to `org-mode' bookmarks in indirect buffers with `org-tree-to-indirect-buffer'."
+  "Jump to `org-mode' bookmarks in indirect buffers.
+When enabled, always jumps to bookmarked headings in indirect
+buffers.  Otherwise, only uses indirect buffers if the bookmark
+was made in one.  Uses `org-tree-to-indirect-buffer'."
   :type 'boolean)
 
 (defcustom org-bookmark-heading-filename-fn #'org-bookmark-heading--display-path
   "Function that returns string to display representing bookmarked file's path.
 It should take one argument, the path to the file."
   :type 'function)
+
+(defcustom org-bookmark-heading-make-ids nil
+  "Whether to automatically make ID properties when bookmarking headings.
+A bookmark will always include an entry's filename, outline path,
+and ID, if one exists.  If this option is enabled, an ID will be
+created for entries that don't already have one."
+  :type '(choice (const :tag "Make ID if missing" t)
+                 (const :tag "Make ID if missing and entry is within `org-directory'"
+                        (lambda ()
+                          (and (buffer-file-name)
+                               (file-in-directory-p (buffer-file-name) org-directory))))
+                 (const :tag "Use existing IDs, but don't make new ones" nil)
+                 (function :tag "Custom predicate" :doc "Called with point at the heading, it should return non-nil if an ID should be created.  This may be useful to, e.g. only make IDs for entries within one's `org-directory'.")))
 
 ;;;; Variables
 
@@ -100,7 +116,9 @@ heading.  Set org-id for heading if necessary."
                     (org-link-display-format (org-get-heading t t))))
          (name (concat display-filename (when heading
                                           (concat ":" heading))))
-         front-context-string handler)
+         (outline-path (org-get-outline-path 'with-self))
+         (indirectp (when (buffer-base-buffer) t))
+         id handler)
     (unless (and (boundp 'bookmark-name)
                  (or (string= bookmark-name (plist-get org-bookmark-names-plist :last-capture-marker))
                      (string= bookmark-name (plist-get org-bookmark-names-plist :last-capture))
@@ -117,18 +135,19 @@ heading.  Set org-id for heading if necessary."
       ;; is set in `org-capture-bookmark-last-stored-position' and in
       ;; `org-refile', and it seems to be the way to detect whether
       ;; this is being called from a capture or a refile.
-
-      ;; MAYBE: An option to always use org-ids.  Some people might
-      ;; prefer to have all headings given org-ids, because that way
-      ;; the bookmarks will be more accurate.  The file/line-number
-      ;; bookmarks aren't guaranteed to be accurate with org files.
-      (when heading
-        (setq front-context-string (org-id-get (point) t)))
-      (setq handler 'org-bookmark-jump))
+      (setf id (org-id-get (point) (pcase-exhaustive org-bookmark-heading-make-ids
+                                     (`t t)
+                                     (`nil nil)
+                                     ((pred functionp) (funcall org-bookmark-heading-make-ids))))
+            handler #'org-bookmark-jump))
     (rassq-delete-all nil `(,name
                             (filename . ,filename)
                             (handler . ,handler)
-                            (front-context-string . ,front-context-string)))))
+                            ;; TODO: Let the context string be the "natural" one that a bookmark would normally use.
+                            ;; (front-context-string . ,front-context-string)
+                            (id . ,id)
+                            (outline-path . ,outline-path)
+                            (indirectp . ,indirectp)))))
 
 (defun org-bookmark-heading--display-path (path)
   "Return display string for PATH.
@@ -138,52 +157,68 @@ Returns in format \"parent-directory/filename\"."
 
 ;;;###autoload
 (defun org-bookmark-jump (bookmark)
-  "Jump to BOOKMARK, where BOOKMARK is one whose
-`front-context-string' is an org-id."
-  (let ((filename (cdr (assoc 'filename bookmark)))
-        (id (cdr (assoc 'front-context-string bookmark)))
-        (original-buffer (current-buffer))
-        marker new-buffer)
-    (when id
-      ;; ID specified: find it and set marker
-      (or
-       ;; Look in open and agenda files first. This way, if the node has
-       ;; moved to another file, this might find it.
-       (setq marker (org-id-find id t))
-       (when (and filename
-                  (not (org-find-base-buffer-visiting filename))
-                  (file-exists-p filename))
-         ;; Bookmark's file exists but is not open, nor in the
-         ;; agenda. Find the file and look for the ID again.
-         (setq new-buffer (find-file-noselect filename))
-         (setq marker (org-id-find id t)))))
-    (cond (marker
-           ;; ID specified, found, and marker set
-           (org-goto-marker-or-bmk marker)
-           (when org-bookmark-jump-indirect
-             (org-tree-to-indirect-buffer)
-             (unless (equal original-buffer (car (window-prev-buffers)))
-               ;; The selected bookmark was in a different buffer.  Put the
-               ;; non-indirect buffer at the bottom of the prev-buffers list
-               ;; so it won't be selected when the indirect buffer is killed.
-               (set-window-prev-buffers nil (append (cdr (window-prev-buffers))
-                                                    (car (window-prev-buffers))))))
-           (unless (equal (buffer-file-name (marker-buffer marker)) filename)
-             ;; TODO: Automatically update the bookmark?
-             ;; Warn that the node has moved to another file
-             (message "Heading has moved to another file; consider updating the bookmark.")))
-          (id
-           ;; ID specified, but not found
-           (if new-buffer
-               (progn
-                 ;; File found but not bookmark
-                 (kill-buffer new-buffer) ; Don't leave buffer open
-                 (message "Bookmark for org-id %s not found in open org files, agenda files, or in %s." id filename))
-             ;; File not found
-             (message "Bookmark for org-id %s not found in open org files or agenda files, and file not found: %s" id filename)))
-          (t
-           ;; ID not specified, only filename
-           (find-file filename)))))
+  "Jump to `org-bookmark-heading' BOOKMARK.
+BOOKMARK record should have fields `map', `outline-path', and
+`id', (and, for compatibility, `front-context-string' is also
+supported, in which case it should be an entry ID)."
+  (cl-flet ((jump-to-id
+             (id) (when-let ((id id)
+                             (marker (org-id-find id 'markerp)))
+                    (org-goto-marker-or-bmk marker)
+                    (current-buffer)))
+            (jump-to-olp (outline-path)
+                         (when-let ((olp outline-path)
+                                    (marker (org-find-olp outline-path 'this-buffer)))
+                           (org-goto-marker-or-bmk marker)
+                           (current-buffer))))
+    (pcase-let* ((`(,_name . ,(map filename outline-path id front-context-string indirectp)) bookmark)
+                 (id (or id
+                         ;; For old bookmark records made before we
+                         ;; saved the `id' key.
+                         front-context-string))
+                 (original-buffer (current-buffer))
+                 (new-buffer))
+      (when (or (and (or id outline-path)
+                     ;; Bookmark has ID and/or outline path.
+                     (or (jump-to-id id)
+                         ;; ID not found: Open the file and look again.
+                         (when-let ((buffer (when filename
+                                              (or (org-find-base-buffer-visiting filename)
+                                                  (and (file-exists-p filename)
+                                                       (setf new-buffer t)
+                                                       (find-file-noselect filename))))))
+                           ;; Found file.
+                           (progn
+                             (setf new-buffer buffer)
+                             (set-buffer buffer)
+                             (or (jump-to-id id)
+                                 ;; Still couldn't find ID: Try outline path.
+                                 (jump-to-olp outline-path)
+                                 (progn
+                                   ;; ID not found: Cleanup buffer.
+                                   (kill-buffer new-buffer)
+                                   (error "Can't find bookmarked heading: %S" bookmark)))))))
+                ;; Bookmark only has filename, not ID or outline path.
+                (and filename
+                     (find-file filename)))
+        ;; Found heading or file.
+        (when (and (or indirectp org-bookmark-jump-indirect)
+                   (or id outline-path))
+          ;; Found heading (not just file): open in indirect buffer.
+          (let ((org-indirect-buffer-display 'current-window))
+            ;; We bind `org-indirect-buffer-display' to this because
+            ;; this is the only value that makes sense for our purpose.
+            (org-tree-to-indirect-buffer))
+          (unless (equal original-buffer (car (window-prev-buffers)))
+            ;; The selected bookmark was in a different buffer.  Put the
+            ;; non-indirect buffer at the bottom of the prev-buffers list
+            ;; so it won't be selected when the indirect buffer is killed.
+            (set-window-prev-buffers nil (append (cdr (window-prev-buffers))
+                                                 (car (window-prev-buffers))))))
+        (unless (equal (buffer-file-name (buffer-base-buffer)) filename)
+          ;; TODO: Automatically update the bookmark?
+          ;; Warn that the node has moved to another file
+          (message "Heading has moved to another file.  Consider updating bookmark: %S" bookmark))))))
 
 ;;;; Helm support
 
