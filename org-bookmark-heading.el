@@ -1,4 +1,4 @@
-;;; org-bookmark-heading.el --- Emacs bookmark support for org-mode
+;;; org-bookmark-heading.el --- Emacs bookmark support for org-mode  -*- lexical-binding: t; -*-
 
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Version: 1.2-pre
