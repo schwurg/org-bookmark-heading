@@ -36,6 +36,10 @@ You can also customize the variable =org-bookmark-jump-indirect= to make org-mod
 
 ** Changelog
 
+*** 1.2-pre
+
+Nothing new yet.
+
 *** 1.1
 
 *Additions*
