@@ -46,6 +46,7 @@ You can also customize the variable =org-bookmark-jump-indirect= to make org-mod
 + When a bookmark is created in an indirect buffer, the restored bookmark will use an indirect buffer.
 + Lexical binding is enabled.
 + Various small improvements.
++ Library =f= is no longer used.
 
 *** 1.1
 

@@ -3,7 +3,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Version: 1.2-pre
 ;; Url: http://github.com/alphapapa/org-bookmark-heading
-;; Package-Requires: ((emacs "24.4") (f "0.17.2"))
+;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: hypermedia, outlines
 
 ;;; Commentary:
@@ -65,8 +65,6 @@
 (require 'mode-local)
 (require 'org)
 (require 'bookmark)
-
-(require 'f)
 
 ;;;; Customization
 
@@ -152,8 +150,9 @@ heading.  Set org-id for heading if necessary."
 (defun org-bookmark-heading--display-path (path)
   "Return display string for PATH.
 Returns in format \"parent-directory/filename\"."
-  (f-join (f-filename (f-parent path))
-          (f-filename path)))
+  ;; TODO: In Emacs 28.1, use `file-name-concat'.
+  (concat (file-name-nondirectory (directory-file-name (file-name-directory path)))
+          "/" (file-name-nondirectory path)))
 
 ;;;###autoload
 (defun org-bookmark-jump (bookmark)
