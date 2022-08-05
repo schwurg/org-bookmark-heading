@@ -45,8 +45,9 @@ You can also customize the variable =org-bookmark-jump-indirect= to make org-mod
 + Bookmark records always include the filename, outline path, and an existing ID property.
 + When a bookmark is created in an indirect buffer, the restored bookmark will use an indirect buffer.
 + Lexical binding is enabled.
-+ Various small improvements.
 + Library =f= is no longer used.
++ Symbols are now properly prefixed with the package name, and obsolete aliases to the former names are defined.
++ Various small improvements.
 
 *** 1.1
 

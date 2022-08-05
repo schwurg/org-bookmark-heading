@@ -59,9 +59,6 @@
 
 ;;; Code:
 
-;; FIXME: Symbol prefixes should all be `org-bookmark-heading'.  Should define aliases to existing
-;; `org-bookmark'-prefixed symbols to preserve existing bookmarks and customization.
-
 (require 'mode-local)
 (require 'org)
 (require 'bookmark)
@@ -73,7 +70,10 @@
   :group 'org
   :link '(url-link "http://github.com/alphapapa/org-bookmark-heading"))
 
-(defcustom org-bookmark-jump-indirect nil
+(define-obsolete-variable-alias
+  'org-bookmark-jump-indirect 'org-bookmark-heading-jump-indirect "1.2")
+
+(defcustom org-bookmark-heading-jump-indirect nil
   "Jump to `org-mode' bookmarks in indirect buffers.
 When enabled, always jumps to bookmarked headings in indirect
 buffers.  Otherwise, only uses indirect buffers if the bookmark
@@ -100,12 +100,12 @@ created for entries that don't already have one."
 
 ;;;; Variables
 
-(setq-mode-local org-mode bookmark-make-record-function 'org-bookmark-make-record)
+(setq-mode-local org-mode bookmark-make-record-function 'org-bookmark-heading-make-record)
 
 ;;;; Functions
 
 ;;;###autoload
-(defun org-bookmark-make-record ()
+(defun org-bookmark-heading-make-record ()
   "Return alist for `bookmark-set' for current `org-mode'
 heading.  Set org-id for heading if necessary."
   (let* ((filename (buffer-file-name (org-base-buffer (current-buffer))))
@@ -137,7 +137,7 @@ heading.  Set org-id for heading if necessary."
                                      (`t t)
                                      (`nil nil)
                                      ((pred functionp) (funcall org-bookmark-heading-make-ids))))
-            handler #'org-bookmark-jump))
+            handler #'org-bookmark-heading-jump))
     (rassq-delete-all nil `(,name
                             (filename . ,filename)
                             (handler . ,handler)
@@ -147,6 +147,9 @@ heading.  Set org-id for heading if necessary."
                             (outline-path . ,outline-path)
                             (indirectp . ,indirectp)))))
 
+(define-obsolete-function-alias
+  'org-bookmark-make-record 'org-bookmark-heading-make-record "1.2")
+
 (defun org-bookmark-heading--display-path (path)
   "Return display string for PATH.
 Returns in format \"parent-directory/filename\"."
@@ -155,7 +158,7 @@ Returns in format \"parent-directory/filename\"."
           "/" (file-name-nondirectory path)))
 
 ;;;###autoload
-(defun org-bookmark-jump (bookmark)
+(defun org-bookmark-heading-jump (bookmark)
   "Jump to `org-bookmark-heading' BOOKMARK.
 BOOKMARK record should have fields `map', `outline-path', and
 `id', (and, for compatibility, `front-context-string' is also
@@ -201,7 +204,7 @@ supported, in which case it should be an entry ID)."
                 (and filename
                      (find-file filename)))
         ;; Found heading or file.
-        (when (and (or indirectp org-bookmark-jump-indirect)
+        (when (and (or indirectp org-bookmark-heading-jump-indirect)
                    (or id outline-path))
           ;; Found heading (not just file): open in indirect buffer.
           (let ((org-indirect-buffer-display 'current-window))
@@ -219,26 +222,30 @@ supported, in which case it should be an entry ID)."
           ;; Warn that the node has moved to another file
           (message "Heading has moved to another file.  Consider updating bookmark: %S" bookmark))))))
 
+;;;###autoload
+(define-obsolete-function-alias
+  'org-bookmark-jump 'org-bookmark-heading-jump "1.2")
+
 ;;;; Helm support
 
 (with-eval-after-load 'helm-bookmark
 
-  (defun helm-org-bookmark-jump-indirect-action (bookmark)
-    "Call `bookmark-jump' with `org-bookmark-jump-indirect' set to t.
+  (defun helm-org-bookmark-heading-jump-indirect-action (bookmark)
+    "Call `bookmark-jump' with `org-bookmark-heading-jump-indirect' set to t.
 
 This function is necessary because `helm-exit-and-execute-action'
-somehow loses the dynamic binding of `org-bookmark-jump-indirect'.
+somehow loses the dynamic binding of `org-bookmark-heading-jump-indirect'.
 This calls `bookmark-jump' with it set properly.  Maybe there's a
 better way to do this, but Helm can be confusing, and this works."
-    (let ((org-bookmark-jump-indirect t))
+    (let ((org-bookmark-heading-jump-indirect t))
       (bookmark-jump bookmark)))
 
-  (defun helm-org-bookmark-jump-indirect ()
+  (defun helm-org-bookmark-heading-jump-indirect ()
     "Jump to `org-mode' bookmark in an indirect buffer."
     (interactive)
     (with-helm-alive-p
       (let ((bookmark (helm-get-selection)))
-        (if (equal (bookmark-get-handler bookmark) 'org-bookmark-jump)
+        (if (member (bookmark-get-handler bookmark) '(org-bookmark-heading-jump org-bookmark-jump))
             ;; Selected candidate is an org-mode bookmark
             (helm-exit-and-execute-action 'helm-org-bookmark-jump-indirect-action)
           (error "Not an org-mode bookmark")))))
