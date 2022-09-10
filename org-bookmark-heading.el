@@ -119,7 +119,8 @@ Sets ID property for heading if necessary."
                     (org-link-display-format (org-get-heading t t))))
          (name (concat display-filename (when heading
                                           (concat ":" heading))))
-         (outline-path (org-get-outline-path 'with-self))
+         (outline-path (when heading
+                         (org-get-outline-path 'with-self)))
          (indirectp (when (buffer-base-buffer) t))
          id handler)
     (unless (and (boundp 'bookmark-name)
