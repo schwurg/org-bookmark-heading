@@ -216,7 +216,7 @@ supported, in which case it should be an entry ID)."
             ;; non-indirect buffer at the bottom of the prev-buffers list
             ;; so it won't be selected when the indirect buffer is killed.
             (set-window-prev-buffers nil (append (cdr (window-prev-buffers))
-                                                 (car (window-prev-buffers))))))
+                                                 (list (car (window-prev-buffers)))))))
         (unless (equal (buffer-file-name (buffer-base-buffer)) filename)
           ;; TODO: Automatically update the bookmark?
           ;; Warn that the node has moved to another file
