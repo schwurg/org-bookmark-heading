@@ -29,7 +29,7 @@ You can also customize the variable =org-bookmark-jump-indirect= to make Org boo
 
 * Changelog
 
-** 1.2-pre
+** 1.2
 
 *Additions*
 + Option ~org-bookmark-heading-make-ids~ controls whether a new ID is created when none exists.
