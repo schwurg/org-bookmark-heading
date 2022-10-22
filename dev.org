@@ -4,7 +4,10 @@
 
 When creating a bookmark with =helm-bookmarks=, the bookmark name doesn't get filled in like it does when using =C-x r m=.
 
-** TODO Make changes [[gnus:gmane.emacs.orgmode#87wpi3imbl.fsf@nicolasgoaziou.fr][suggested by Nicolas]]
+** DONE Make changes [[gnus:gmane.emacs.orgmode#87wpi3imbl.fsf@nicolasgoaziou.fr][suggested by Nicolas]]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2022-10-22 Sat 09:15]
+:END:
 
 #+BEGIN_QUOTE
 > - please switch to lexical binding as all but one file in Org core,
