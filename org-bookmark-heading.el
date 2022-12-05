@@ -63,6 +63,10 @@
 (require 'org)
 (require 'bookmark)
 
+(eval-when-compile
+  ;; Support map pattern in pcase
+  (require 'map))
+
 ;;;; Customization
 
 (defgroup org-bookmark-heading nil
