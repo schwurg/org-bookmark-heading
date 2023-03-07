@@ -98,6 +98,11 @@ created for entries that don't already have one."
                  (const :tag "Use existing IDs, but don't make new ones" nil)
                  (function :tag "Custom predicate" :doc "Called with point at the heading, it should return non-nil if an ID should be created.  This may be useful to, e.g. only make IDs for entries within one's `org-directory'.")))
 
+(defcustom org-bookmark-heading-after-jump-hook nil
+  "Hook run after jumping to a heading.
+Called with point on heading.  Can be used to, e.g. cycle visibility."
+  :type 'hook)
+
 ;;;; Variables
 
 (setq-mode-local org-mode bookmark-make-record-function 'org-bookmark-heading-make-record)
@@ -216,7 +221,8 @@ supported, in which case it should be an entry ID)."
             ;; non-indirect buffer at the bottom of the prev-buffers list
             ;; so it won't be selected when the indirect buffer is killed.
             (set-window-prev-buffers nil (append (cdr (window-prev-buffers))
-                                                 (list (car (window-prev-buffers)))))))
+                                                 (list (car (window-prev-buffers))))))
+          (run-hooks 'org-bookmark-heading-after-jump-hook))
         (unless (equal (buffer-file-name (buffer-base-buffer)) filename)
           ;; TODO: Automatically update the bookmark?
           ;; Warn that the node has moved to another file
