@@ -223,7 +223,9 @@ supported, in which case it should be an entry ID)."
             (set-window-prev-buffers nil (append (cdr (window-prev-buffers))
                                                  (list (car (window-prev-buffers))))))
           (run-hooks 'org-bookmark-heading-after-jump-hook))
-        (unless (equal (buffer-file-name (buffer-base-buffer)) filename)
+        (unless (equal (file-truename (or (buffer-file-name (buffer-base-buffer))
+                                          (buffer-file-name)))
+                       (file-truename filename))
           ;; TODO: Automatically update the bookmark?
           ;; Warn that the node has moved to another file
           (message "Heading has moved to another file.  Consider updating bookmark: %S" bookmark))))))

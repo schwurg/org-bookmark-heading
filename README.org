@@ -34,6 +34,9 @@ You can also customize the variable =org-bookmark-jump-indirect= to make Org boo
 *Additions*
 + Option ~org-bookmark-heading-after-jump-hook~ is called after jumping to a bookmark.  It can be used to, e.g. cycle visibility.
 
+*Fixes*
++ Use ~file-truename~ when comparing filenames.
+
 ** 1.2
 
 *Additions*
