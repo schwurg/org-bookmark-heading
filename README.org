@@ -36,6 +36,7 @@ You can also customize the variable =org-bookmark-jump-indirect= to make Org boo
 
 *Fixes*
 + Use ~file-truename~ when comparing filenames.
++ Byte-compilation error on newer versions of Emacs.  (Thanks to [[https://github.com/akirak][Akira Komamura]] and [[https://github.com/renatofdds][Renato Ferreira]].)
 
 ** 1.2
 
