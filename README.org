@@ -29,7 +29,7 @@ You can also customize the variable =org-bookmark-jump-indirect= to make Org boo
 
 * Changelog
 
-** 1.3-pre
+** 1.3
 
 *Additions*
 + Option ~org-bookmark-heading-after-jump-hook~ is called after jumping to a bookmark.  It can be used to, e.g. cycle visibility.
