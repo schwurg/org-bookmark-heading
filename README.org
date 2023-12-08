@@ -29,7 +29,7 @@ You can also customize the variable =org-bookmark-jump-indirect= to make Org boo
 
 * Changelog
 
-** 1.3.1-pre
+** 1.3.1
 
 *Fixes*
 + Option ~org-bookmark-heading-make-ids~ when bookmarking an indirect buffer with option set to =Make ID if missing and entry is within `org-directory'=.
