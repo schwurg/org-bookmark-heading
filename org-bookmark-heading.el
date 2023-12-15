@@ -93,7 +93,9 @@ It should take one argument, the path to the file."
   "Automatically make ID properties when bookmarking headings.
 A bookmark will always include an entry's filename, outline path,
 and ID, if one exists.  If this option is enabled, an ID will be
-created for entries that don't already have one."
+created for entries that don't already have one.  When
+bookmarking an entire org file (i.e. point is before the first
+heading), no ID will be created."
   :type '(choice (const :tag "Make ID if missing" t)
                  (const :tag "Make ID if missing and entry is within `org-directory'"
                         (lambda ()
@@ -146,10 +148,11 @@ Sets ID property for heading if necessary."
       ;; is set in `org-capture-bookmark-last-stored-position' and in
       ;; `org-refile', and it seems to be the way to detect whether
       ;; this is being called from a capture or a refile.
-      (setf id (org-id-get (point) (pcase-exhaustive org-bookmark-heading-make-ids
-                                     (`t t)
-                                     (`nil nil)
-                                     ((pred functionp) (funcall org-bookmark-heading-make-ids))))
+      (setf id (org-id-get (point) (if heading
+                                       (pcase-exhaustive org-bookmark-heading-make-ids
+                                         (`t t)
+                                         (`nil nil)
+                                         ((pred functionp) (funcall org-bookmark-heading-make-ids)))))
             handler #'org-bookmark-heading-jump))
     (rassq-delete-all nil `(,name
                             (filename . ,filename)
